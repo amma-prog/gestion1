@@ -3,16 +3,24 @@ import { motion } from 'framer-motion';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '../context/AuthContext';
+
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { login } = useAuth();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // TODO: Implement actual auth
-        console.log("Login with:", email, password);
-        navigate('/dashboard');
+        setError('');
+        try {
+            await login(email, password);
+            navigate('/dashboard');
+        } catch (err) {
+            setError('Échec de la connexion. Vérifiez vos identifiants.');
+        }
     };
 
     return (
@@ -37,6 +45,11 @@ export default function LoginPage() {
                 </div>
 
                 <div className="p-8">
+                    {error && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center">
+                            {error}
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700">Email</label>
