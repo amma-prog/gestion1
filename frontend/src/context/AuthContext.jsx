@@ -12,12 +12,37 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (token) {
-            // Decode token to get user info (optional, or fetch /me endpoint)
-            // For now, we just assume valid if token exists
-            setUser({ email: 'user@example.com' }); // Placeholder
-        }
-        setLoading(false);
+        console.log('AuthContext mounted. Token from localStorage:', token);
+        const fetchUserInfo = async () => {
+            if (token) {
+                try {
+                    const response = await fetch('/api/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (response.ok) {
+                        const userData = await response.json();
+                        setUser(userData);
+                    } else {
+                        // If any error occurs (401, 403, 500), clear token
+                        console.warn('Failed to fetch user info, logging out. Status:', response.status);
+                        localStorage.removeItem('token');
+                        setToken(null);
+                        setUser(null);
+                        window.location.href = '/login';
+                    }
+                } catch (error) {
+                    console.error('Error fetching user info:', error);
+                    localStorage.removeItem('token');
+                    setToken(null);
+                    setUser(null);
+                    window.location.href = '/login';
+                }
+            }
+            setLoading(false);
+        };
+        fetchUserInfo();
     }, [token]);
 
     const login = async (email, password) => {
@@ -30,7 +55,7 @@ export function AuthProvider({ children }) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: formData,
+            body: formData.toString(),
         });
 
         if (!response.ok) {
@@ -40,8 +65,20 @@ export function AuthProvider({ children }) {
         const data = await response.json();
         localStorage.setItem('token', data.access_token);
         setToken(data.access_token);
-        setUser({ email }); // In real app, decode token or fetch profile
-        return true;
+
+        // Fetch user info
+        const userResponse = await fetch('/api/me', {
+            headers: {
+                'Authorization': `Bearer ${data.access_token}`
+            }
+        });
+        let userData = null;
+        if (userResponse.ok) {
+            userData = await userResponse.json();
+            setUser(userData);
+        }
+
+        return userData;
     };
 
     const register = async (userData) => {

@@ -31,6 +31,7 @@ class User(Base):
     role = Column(String, default=UserRole.STUDENT)
     
     tickets = relationship("Ticket", back_populates="owner")
+    comments = relationship("Comment", back_populates="author")
 
 class Ticket(Base):
     __tablename__ = "tickets"
@@ -45,3 +46,16 @@ class Ticket(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="tickets")
+    comments = relationship("Comment", back_populates="ticket")
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(String)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    ticket_id = Column(Integer, ForeignKey("tickets.id"))
+    author_id = Column(Integer, ForeignKey("users.id"))
+
+    ticket = relationship("Ticket", back_populates="comments")
+    author = relationship("User", back_populates="comments")

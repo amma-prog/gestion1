@@ -32,7 +32,15 @@ def register_user(request: Request, user: schemas.UserCreate, db: Session = Depe
 @router.post("/token", response_model=schemas.Token)
 @limiter.limit("5/minute")
 def login_for_access_token(request: Request, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(database.get_db)):
+    print(f"Login attempt for username: '{form_data.username}'")
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if user:
+        print(f"User found: {user.email}, Role: {user.role}")
+        is_valid = auth.verify_password(form_data.password, user.hashed_password)
+        print(f"Password valid: {is_valid}")
+    else:
+        print("User not found")
+
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

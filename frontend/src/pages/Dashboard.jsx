@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Ticket, Users, Clock, CheckCircle, AlertCircle, Plus, LogOut } from 'lucide-react';
+import { Ticket, Users, Clock, CheckCircle, AlertCircle, Plus, LogOut, Shield, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTickets } from '../context/TicketContext';
+import { useAuth } from '../context/AuthContext';
+import TicketDetailModal from '../components/TicketDetailModal';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const { tickets, stats, getTicketsByCategory } = useTickets();
+    const { user, logout } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedTicket, setSelectedTicket] = useState(null);
 
     const statsData = [
         { label: 'Total Tickets', value: stats.total, icon: Ticket, color: 'bg-blue-500' },
@@ -16,18 +20,23 @@ export default function Dashboard() {
         { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'bg-green-500' }
     ];
 
+    const safeTickets = Array.isArray(tickets) ? tickets : [];
+
     const categories = [
-        { id: 'all', label: 'Tous', count: tickets.length },
-        { id: 'student', label: 'Étudiant', count: tickets.filter(t => t.category === 'student').length },
-        { id: 'teacher', label: 'Enseignant', count: tickets.filter(t => t.category === 'teacher').length },
-        { id: 'employee', label: 'Employé', count: tickets.filter(t => t.category === 'employee').length }
+        { id: 'all', label: 'Tous', count: safeTickets.length },
+        { id: 'student', label: 'Étudiant', count: safeTickets.filter(t => t.category === 'student').length },
+        { id: 'teacher', label: 'Enseignant', count: safeTickets.filter(t => t.category === 'teacher').length },
+        { id: 'employee', label: 'Employé', count: safeTickets.filter(t => t.category === 'employee').length }
     ];
 
     const displayedTickets = getTicketsByCategory(selectedCategory);
 
     const handleLogout = () => {
+        logout();
         navigate('/login');
     };
+
+
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -38,7 +47,28 @@ export default function Dashboard() {
                         <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
                             <Ticket className="w-6 h-6 text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold text-slate-900">Help Desk Dashboard</h1>
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900">Help Desk Dashboard</h1>
+                            {user && (
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                    <span>{user.email}</span>
+                                    {user.role === 'admin' && (
+                                        <>
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+                                                <Shield className="w-3 h-3" />
+                                                Admin
+                                            </span>
+                                            <button
+                                                onClick={() => navigate('/admin')}
+                                                className="text-primary-600 hover:text-primary-700 underline ml-2"
+                                            >
+                                                Go to Admin Panel
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <button
                         onClick={handleLogout}
@@ -128,10 +158,26 @@ export default function Dashboard() {
                             </div>
                         ) : (
                             displayedTickets.map((ticket) => (
-                                <div key={ticket.id} className="p-6 hover:bg-slate-50 transition-colors">
+                                <div
+                                    key={ticket.id}
+                                    onClick={() => setSelectedTicket(ticket)}
+                                    className="p-6 hover:bg-slate-50 transition-colors cursor-pointer"
+                                >
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
-                                            <h3 className="font-medium text-slate-900 mb-1">#{ticket.id} - {ticket.title}</h3>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-medium text-slate-900">#{ticket.id} - {ticket.title}</h3>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTicket(ticket);
+                                                    }}
+                                                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors ml-2"
+                                                    title="Voir détails"
+                                                >
+                                                    <Eye className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                             <div className="flex items-center gap-3">
                                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
                                                     }`}>
@@ -144,9 +190,11 @@ export default function Dashboard() {
                                                 <span className="text-sm text-slate-500">{ticket.category}</span>
                                             </div>
                                         </div>
-                                        <button className="text-primary-600 hover:text-primary-700 font-medium">
-                                            View
-                                        </button>
+                                        <span className="text-sm text-slate-500">
+                                            {ticket.status === 'open' ? 'En attente de prise en charge' :
+                                                ticket.status === 'in_progress' ? 'En cours de traitement' :
+                                                    'Résolu'}
+                                        </span>
                                     </div>
                                 </div>
                             ))
@@ -154,6 +202,12 @@ export default function Dashboard() {
                     </div>
                 </motion.div>
             </div>
+            {selectedTicket && (
+                <TicketDetailModal
+                    ticket={selectedTicket}
+                    onClose={() => setSelectedTicket(null)}
+                />
+            )}
         </div>
     );
 }

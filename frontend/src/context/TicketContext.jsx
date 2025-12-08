@@ -18,6 +18,7 @@ export function TicketProvider({ children }) {
 
     // Fetch tickets from API
     const fetchTickets = async () => {
+        console.log('Fetching tickets... Token:', !!token);
         if (!token) {
             setLoading(false);
             return;
@@ -28,9 +29,13 @@ export function TicketProvider({ children }) {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            console.log('Fetch response status:', response.status);
             if (response.ok) {
                 const data = await response.json();
+                console.log('Fetched tickets:', data);
                 setTickets(data);
+            } else {
+                console.error('Failed to fetch tickets');
             }
         } catch (error) {
             console.error('Error fetching tickets:', error);
@@ -77,15 +82,37 @@ export function TicketProvider({ children }) {
     };
 
     const getTicketsByCategory = (category) => {
+        if (!Array.isArray(tickets)) return [];
         if (category === 'all') return tickets;
         return tickets.filter(ticket => ticket.category === category);
     };
 
+    const addComment = async (ticketId, content) => {
+        try {
+            const response = await fetch(`/api/tickets/${ticketId}/comments/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ content }),
+            });
+
+            if (response.ok) {
+                const newComment = await response.json();
+                // Update local state if needed, or just return the comment
+                return newComment;
+            }
+        } catch (error) {
+            console.error('Error adding comment:', error);
+        }
+    };
+
     const stats = {
-        total: tickets.length,
-        open: tickets.filter(t => t.status === 'open').length,
-        inProgress: tickets.filter(t => t.status === 'in_progress').length,
-        resolved: tickets.filter(t => t.status === 'resolved').length
+        total: Array.isArray(tickets) ? tickets.length : 0,
+        open: Array.isArray(tickets) ? tickets.filter(t => t.status === 'open').length : 0,
+        inProgress: Array.isArray(tickets) ? tickets.filter(t => t.status === 'in_progress').length : 0,
+        resolved: Array.isArray(tickets) ? tickets.filter(t => t.status === 'resolved').length : 0
     };
 
     return (
@@ -96,7 +123,9 @@ export function TicketProvider({ children }) {
             updateTicket,
             deleteTicket,
             getTicketsByCategory,
-            stats
+            stats,
+            fetchTickets,
+            addComment
         }}>
             {children}
         </TicketContext.Provider>

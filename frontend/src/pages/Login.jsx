@@ -16,8 +16,12 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         try {
-            await login(email, password);
-            navigate('/dashboard');
+            const userData = await login(email, password);
+            if (userData.role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             setError('Échec de la connexion. Vérifiez vos identifiants.');
         }

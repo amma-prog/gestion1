@@ -19,11 +19,27 @@ class TicketBase(BaseModel):
 class TicketCreate(TicketBase):
     pass
 
+class CommentBase(BaseModel):
+    content: str
+
+class CommentCreate(CommentBase):
+    pass
+
+class Comment(CommentBase):
+    id: int
+    created_at: datetime
+    author_id: int
+    ticket_id: int
+    
+    class Config:
+        from_attributes = True
+
 class Ticket(TicketBase):
     id: int
     status: str
     created_at: datetime
     owner_id: Optional[int] = None
+    comments: List[Comment] = []
 
     class Config:
         from_attributes = True
