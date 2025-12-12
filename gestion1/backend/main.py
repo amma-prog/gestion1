@@ -9,22 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 # Create tables
-# Create tables
 models.Base.metadata.create_all(bind=database.engine)
-
-# Automate Seeding (Create initial users if they don't exist)
-try:
-    from create_user import create_user
-    from create_admin import create_admin
-    from create_all_users import create_users_and_assign_tickets
-    
-    print("--- Auto-Seeding Database ---")
-    create_user()
-    create_admin()
-    create_users_and_assign_tickets()
-    print("--- Auto-Seeding Complete ---")
-except Exception as e:
-    print(f"Auto-Seeding Warning: {e}")
 
 # Rate limiting configuration
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
