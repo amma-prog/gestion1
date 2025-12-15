@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, User, Shield, MessageSquare } from 'lucide-react';
+import { X, Send, User, Shield, MessageSquare, Clock, AlertCircle } from 'lucide-react';
 import { useTickets } from '../context/TicketContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,12 +10,21 @@ export default function TicketDetailModal({ ticket, onClose }) {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         if (ticket) {
             fetchComments();
         }
     }, [ticket]);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [comments]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     const fetchComments = async () => {
         try {
@@ -39,10 +48,14 @@ export default function TicketDetailModal({ ticket, onClose }) {
         e.preventDefault();
         if (!newComment.trim()) return;
 
-        const comment = await addComment(ticket.id, newComment);
-        if (comment) {
-            setComments([...comments, comment]);
-            setNewComment('');
+        try {
+            const comment = await addComment(ticket.id, newComment);
+            if (comment) {
+                setComments([...comments, comment]);
+                setNewComment('');
+            }
+        } catch (error) {
+            alert(`Erreur lors de l'envoi : ${error.message}`);
         }
     };
 
@@ -50,101 +63,132 @@ export default function TicketDetailModal({ ticket, onClose }) {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                    initial={{ opacity: 0, scale: 0.90, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    transition={{ type: "spring", duration: 0.5 }}
+                    className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col h-[85vh] border border-slate-800"
                 >
                     {/* Header */}
-                    <div className="p-6 border-b border-slate-200 flex justify-between items-start bg-slate-50">
+                    <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50 backdrop-blur-md">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${ticket.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
-                                        ticket.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
-                                            'bg-green-100 text-green-800'
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${ticket.status === 'open' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                    ticket.status === 'in_progress' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                        'bg-purple-500/10 text-purple-400 border-purple-500/20'
                                     }`}>
-                                    {ticket.status}
+                                    {ticket.status.toUpperCase()}
                                 </span>
-                                <span className="text-sm text-slate-500">#{ticket.id}</span>
+                                <span className="text-sm font-mono text-slate-500">#{ticket.id}</span>
                             </div>
-                            <h2 className="text-xl font-bold text-slate-900">{ticket.title}</h2>
+                            <h2 className="text-xl font-bold text-white tracking-tight">{ticket.title}</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                            className="p-2 hover:bg-slate-700/50 rounded-full transition-colors text-slate-400 hover:text-white"
                         >
-                            <X className="w-5 h-5 text-slate-500" />
+                            <X className="w-6 h-6" />
                         </button>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {/* Description */}
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                            <h3 className="text-sm font-medium text-slate-700 mb-2">Description</h3>
-                            <p className="text-slate-600 whitespace-pre-wrap">{ticket.description}</p>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                        {/* Description Card */}
+                        <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700/50">
+                            <h3 className="text-xs font-bold text-indigo-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                <AlertCircle className="w-3 h-3" />
+                                Description du problème
+                            </h3>
+                            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">{ticket.description}</p>
                         </div>
 
-                        {/* Comments */}
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4" />
-                                Discussion
-                            </h3>
+                        {/* Comments / Chat */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-4 my-8">
+                                <div className="h-px flex-1 bg-slate-800"></div>
+                                <span className="text-xs font-medium text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                    <MessageSquare className="w-3 h-3" />
+                                    Conversation
+                                </span>
+                                <div className="h-px flex-1 bg-slate-800"></div>
+                            </div>
 
                             {loading ? (
-                                <div className="text-center py-4 text-slate-500">Loading comments...</div>
+                                <div className="text-center py-10">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+                                </div>
                             ) : comments.length === 0 ? (
-                                <div className="text-center py-8 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-500">
-                                    No comments yet. Start the conversation!
+                                <div className="text-center py-12 bg-slate-800/20 rounded-2xl border border-dashed border-slate-800">
+                                    <p className="text-slate-500 text-sm">Aucun message pour le moment.</p>
+                                    <p className="text-indigo-400 text-xs mt-1">Commencez la discussion !</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {comments.map((comment) => (
-                                        <div
-                                            key={comment.id}
-                                            className={`flex gap-3 ${comment.author_id === user.id ? 'flex-row-reverse' : ''}`}
-                                        >
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${comment.author_id === user.id ? 'bg-primary-100 text-primary-600' : 'bg-slate-100 text-slate-600'
-                                                }`}>
-                                                {comment.author_id === user.id ? <User className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-                                            </div>
-                                            <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${comment.author_id === user.id
-                                                    ? 'bg-primary-600 text-white rounded-tr-none'
-                                                    : 'bg-slate-100 text-slate-800 rounded-tl-none'
-                                                }`}>
-                                                <p className="text-sm">{comment.content}</p>
-                                                <p className={`text-xs mt-1 ${comment.author_id === user.id ? 'text-primary-200' : 'text-slate-400'
+                                <div className="space-y-6">
+                                    {comments.map((comment, index) => {
+                                        const isMe = comment.author_id === user.id;
+                                        return (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                key={comment.id}
+                                                className={`flex gap-4 ${isMe ? 'flex-row-reverse' : ''}`}
+                                            >
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${isMe
+                                                    ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white'
+                                                    : 'bg-slate-700 text-slate-300'
                                                     }`}>
-                                                    {new Date(comment.created_at).toLocaleString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                    {/* Logic: 
+                                                    If I am Admin: isMe=Shield, !isMe=User 
+                                                    If I am User: isMe=User, !isMe=Shield 
+                                                */}
+                                                    {user.role === 'admin' ? (
+                                                        isMe ? <Shield className="w-5 h-5" /> : <User className="w-5 h-5" />
+                                                    ) : (
+                                                        isMe ? <User className="w-5 h-5" /> : <Shield className="w-5 h-5" />
+                                                    )}
+                                                </div>
+                                                <div className={`flex flex-col max-w-[80%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                                    <div className={`px-5 py-3 rounded-2xl shadow-md text-sm leading-relaxed ${isMe
+                                                        ? 'bg-indigo-600 text-white rounded-tr-none'
+                                                        : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700'
+                                                        }`}>
+                                                        {comment.content}
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1 font-medium">
+                                                        <Clock className="w-3 h-3" />
+                                                        {new Date(comment.created_at).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                    <div ref={messagesEndRef} />
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Input */}
-                    <div className="p-4 border-t border-slate-200 bg-white">
-                        <form onSubmit={handleSubmit} className="flex gap-2">
-                            <input
-                                type="text"
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Type your message..."
-                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                            />
+                    {/* Input Area */}
+                    <div className="p-5 border-t border-slate-800 bg-slate-900">
+                        <form onSubmit={handleSubmit} className="flex gap-3 items-center">
+                            <div className="flex-1 relative group">
+                                <input
+                                    type="text"
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    placeholder="Écrivez votre message..."
+                                    className="w-full pl-5 pr-4 py-3.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all placeholder-slate-500 shadow-inner group-hover:bg-slate-800/80"
+                                />
+                            </div>
                             <button
                                 type="submit"
                                 disabled={!newComment.trim()}
-                                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                className="p-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-600/20 active:scale-95 hover:shadow-indigo-500/40"
                             >
-                                <Send className="w-4 h-4" />
-                                Send
+                                <Send className="w-5 h-5" />
                             </button>
                         </form>
                     </div>

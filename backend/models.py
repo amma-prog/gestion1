@@ -59,3 +59,16 @@ class Comment(Base):
 
     ticket = relationship("Ticket", back_populates="comments")
     author = relationship("User", back_populates="comments")
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    action = Column(String, index=True)  # CREATE_TICKET, UPDATE_STATUS, DELETE_TICKET, etc.
+    target_type = Column(String)         # 'ticket', 'user', etc.
+    target_id = Column(Integer)
+    details = Column(String, nullable=True) # Optional details (e.g. "status changed to closed")
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    user = relationship("User")

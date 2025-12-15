@@ -39,6 +39,7 @@ class Ticket(TicketBase):
     status: str
     created_at: datetime
     owner_id: Optional[int] = None
+    owner: Optional["UserBase"] = None
     comments: List[Comment] = []
 
     class Config:
@@ -56,5 +57,19 @@ class User(UserBase):
     id: int
     tickets: List[Ticket] = []
 
+    class Config:
+        from_attributes = True
+
+class AuditLogBase(BaseModel):
+    action: str
+    target_type: str
+    target_id: int
+    details: Optional[str] = None
+
+class AuditLogDisplay(AuditLogBase):
+    id: int
+    user_id: int
+    timestamp: datetime
+    
     class Config:
         from_attributes = True

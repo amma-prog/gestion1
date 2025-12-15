@@ -69,16 +69,47 @@ export function TicketProvider({ children }) {
         }
     };
 
-    const updateTicket = (id, updates) => {
-        // TODO: Implement API update
-        setTickets(tickets.map(ticket =>
-            ticket.id === id ? { ...ticket, ...updates } : ticket
-        ));
+    const updateTicketStatus = async (id, status) => {
+        try {
+            const response = await fetch(`/api/tickets/${id}?status=${status}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const updatedTicket = await response.json();
+                setTickets(tickets.map(ticket =>
+                    ticket.id === id ? updatedTicket : ticket
+                ));
+                return updatedTicket;
+            } else {
+                console.error('Failed to update ticket status');
+            }
+        } catch (error) {
+            console.error('Error updating ticket status:', error);
+        }
     };
 
-    const deleteTicket = (id) => {
-        // TODO: Implement API delete
-        setTickets(tickets.filter(ticket => ticket.id !== id));
+    const deleteTicket = async (id) => {
+        try {
+            const response = await fetch(`/api/tickets/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                setTickets(tickets.filter(ticket => ticket.id !== id));
+                return true;
+            } else {
+                console.error('Failed to delete ticket');
+            }
+        } catch (error) {
+            console.error('Error deleting ticket:', error);
+        }
     };
 
     const getTicketsByCategory = (category) => {
@@ -100,11 +131,14 @@ export function TicketProvider({ children }) {
 
             if (response.ok) {
                 const newComment = await response.json();
-                // Update local state if needed, or just return the comment
                 return newComment;
+            } else {
+                const text = await response.text();
+                throw new Error(text || 'Failed to add comment');
             }
         } catch (error) {
             console.error('Error adding comment:', error);
+            throw error;
         }
     };
 
@@ -120,7 +154,8 @@ export function TicketProvider({ children }) {
             tickets,
             loading,
             addTicket,
-            updateTicket,
+            addTicket,
+            updateTicketStatus,
             deleteTicket,
             getTicketsByCategory,
             stats,

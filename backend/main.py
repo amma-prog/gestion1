@@ -4,11 +4,12 @@ from typing import List
 import models, schemas, database, auth
 from routers import auth as auth_router
 from routers import comments as comments_router
+from routers import audit as audit_router
+from routers.audit import log_action
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-# Create tables
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -35,6 +36,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(auth_router.router)
 app.include_router(comments_router.router)
+app.include_router(audit_router.router)
 
 # Dependency
 def get_db():
@@ -68,6 +70,10 @@ def create_ticket(ticket: schemas.TicketCreate, current_user: models.User = Depe
     db.add(db_ticket)
     db.commit()
     db.refresh(db_ticket)
+    
+    # Audit Log
+    log_action(db, current_user.id, "CREATE_TICKET", "ticket", db_ticket.id, f"Created ticket: {db_ticket.title}")
+    
     return db_ticket
 
 @app.get("/tickets/{ticket_id}", response_model=schemas.Ticket)
@@ -92,7 +98,30 @@ def update_ticket_status(ticket_id: int, status: str, current_user: models.User 
     if db_ticket is None:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
+    old_status = db_ticket.status
     db_ticket.status = status
     db.commit()
     db.refresh(db_ticket)
+    
+    # Audit Log
+    log_action(db, current_user.id, "UPDATE_STATUS", "ticket", ticket_id, f"Status changed from {old_status} to {status}")
+    
     return db_ticket
+
+@app.delete("/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_ticket(ticket_id: int, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    # Seul l'admin peut supprimer les tickets
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete tickets")
+    
+    db_ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    if db_ticket is None:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    db.delete(db_ticket)
+    db.commit()
+    
+    # Audit Log
+    log_action(db, current_user.id, "DELETE_TICKET", "ticket", ticket_id, "Ticket deleted")
+    
+    return None

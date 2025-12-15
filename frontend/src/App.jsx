@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AuditLogs from './pages/AuditLogs';
 import CreateTicket from './pages/CreateTicket';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TicketProvider } from './context/TicketContext';
@@ -38,6 +39,11 @@ function App() {
             <Route path="/admin" element={
               <AdminRoute>
                 <AdminDashboard />
+              </AdminRoute>
+            } />
+            <Route path="/admin/audit" element={
+              <AdminRoute>
+                <AuditLogs />
               </AdminRoute>
             } />
             <Route path="/create-ticket" element={

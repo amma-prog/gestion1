@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { User, Lock, ArrowRight, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -23,62 +22,75 @@ export default function LoginPage() {
                 navigate('/dashboard');
             }
         } catch (err) {
-            setError('Échec de la connexion. Vérifiez vos identifiants.');
+            setError('Identifiants incorrects. Veuillez réessayer.');
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-            >
-                <div className="bg-primary-600 p-8 text-center">
-                    <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm"
-                    >
-                        <User className="w-8 h-8 text-white" />
-                    </motion.div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Bienvenue</h2>
-                    <p className="text-primary-100">Connectez-vous à votre espace Help Desk</p>
-                </div>
+        <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4 bg-slate-900">
+            {/* Animated Background */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                <div className="absolute top-0 -right-4 w-72 h-72 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+                <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"></div>
+            </div>
 
-                <div className="p-8">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, type: "spring" }}
+                className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+                <div className="p-8 md:p-12">
+                    <div className="text-center mb-10">
+                        <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                            className="w-20 h-20 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg transform rotate-3"
+                        >
+                            <Zap className="w-10 h-10 text-white" />
+                        </motion.div>
+                        <h2 className="text-4xl font-black text-white mb-2 tracking-tight">Help Desk</h2>
+                        <p className="text-slate-300 font-light">Accédez à votre espace premium</p>
+                    </div>
+
                     {error && (
-                        <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center">
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-xl mb-6 text-sm text-center backdrop-blur-sm"
+                        >
                             {error}
-                        </div>
+                        </motion.div>
                     )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">Email</label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <label className="text-sm font-semibold text-slate-300 ml-1">Email Professionnel</label>
+                            <div className="relative group">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-cyan-400 transition-colors" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
-                                    placeholder="votre@email.com"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 outline-none transition-all"
+                                    placeholder="exemple@entreprise.com"
                                     required
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">Mot de passe</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <label className="text-sm font-semibold text-slate-300 ml-1">Mot de passe</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-purple-400 transition-colors" />
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 outline-none transition-all"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -86,12 +98,12 @@ export default function LoginPage() {
                         </div>
 
                         <motion.button
-                            whileHover={{ scale: 1.02 }}
+                            whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(168, 85, 247, 0.4)" }}
                             whileTap={{ scale: 0.98 }}
                             type="submit"
-                            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg shadow-primary-500/30"
+                            className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg"
                         >
-                            Se connecter
+                            Connexion sécurisée
                             <ArrowRight className="w-5 h-5" />
                         </motion.button>
                     </form>
